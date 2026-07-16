@@ -1,0 +1,969 @@
+# Linux Filesystem - Complete Notes
+
+# 1. Introduction
+
+A Linux filesystem is the method Linux uses to organize, store, retrieve, and manage files and directories.
+
+Unlike Windows, Linux does **not** use multiple root drives like `C:\`, `D:\`, or `E:\`.
+
+Everything begins from a single root directory:
+/
+
+This is called the **root of the filesystem hierarchy**.
+
+Example:
+
+/
+├── bin
+├── boot
+├── dev
+├── etc
+├── home
+├── lib
+├── media
+├── mnt
+├── opt
+├── proc
+├── root
+├── run
+├── sbin
+├── srv
+├── sys
+├── tmp
+├── usr
+└── var
+
+---
+
+# 2. Filesystem Hierarchy Standard (FHS)
+
+Linux distributions follow the **Filesystem Hierarchy Standard (FHS)**.
+
+FHS defines:
+
+* Directory names
+* Their purposes
+* What should be stored inside them
+
+Because of FHS, most Linux distributions have nearly the same directory layout.
+
+---
+
+# 3. Absolute vs Relative Paths
+
+## Absolute Path
+
+Starts from `/`
+
+Example:
+
+/etc/passwd
+/home/Thanos/Documents/file.txt
+
+Always points to the same location.
+
+---
+
+## Relative Path
+
+Starts from your current directory.
+
+Example:
+
+```bash
+Documents/file.txt
+../Downloads
+```
+
+Depends on where you are currently located.
+
+---
+
+# 4. Important Directories
+
+## /
+
+The top-most directory.
+
+Everything starts here.
+
+---
+
+## /bin
+
+Contains essential user commands.
+
+Examples:
+
+```bash
+ls
+cp
+mv
+rm
+cat
+pwd
+mkdir
+grep
+```
+
+Modern Linux:
+
+```text
+/bin -> /usr/bin
+```
+
+---
+
+## /boot
+
+Contains files required to boot Linux.
+
+Examples:
+
+* Linux Kernel
+* initramfs
+* GRUB bootloader
+
+Common files:
+
+```text
+/boot/vmlinuz
+/boot/initramfs
+```
+
+---
+
+## /dev
+
+Contains device files.
+
+Linux treats hardware as files.
+
+Examples:
+
+```text
+/dev/sda
+/dev/null
+/dev/tty
+/dev/random
+/dev/urandom
+```
+
+Useful devices:
+
+### /dev/null
+
+Discards all output.
+
+```bash
+echo Hello >/dev/null
+```
+
+---
+
+### /dev/random
+
+Provides secure random numbers.
+
+---
+
+### /dev/tty
+
+Represents the current terminal.
+
+---
+
+## /etc
+
+Contains system configuration files.
+
+Common files:
+
+```text
+/etc/passwd
+/etc/shadow
+/etc/hosts
+/etc/resolv.conf
+/etc/fstab
+/etc/ssh/sshd_config
+```
+
+Rule:
+
+> If you are configuring Linux, chances are you are editing something inside `/etc`.
+
+---
+
+## /home
+
+Contains home directories of normal users.
+
+Example:
+
+```text
+/home/alice
+/home/bob
+```
+
+Each user's:
+
+* Documents
+* Downloads
+* SSH keys
+* Git repositories
+* Desktop
+
+are stored here.
+
+---
+
+## /root
+
+Home directory of the root user.
+
+Do not confuse:
+
+```text
+/
+```
+
+with
+
+```text
+/ root
+```
+
+`/` is the filesystem root.
+
+`/root` is the administrator's home directory.
+
+---
+
+## /lib
+
+Contains shared libraries.
+
+Comparable to DLL files in Windows.
+
+Programs use these libraries while running.
+
+Modern Linux:
+
+```text
+/lib -> /usr/lib
+```
+
+---
+
+## /lib64
+
+Contains 64-bit libraries.
+
+---
+
+## /media
+
+Automatic mount point for removable media.
+
+Examples:
+
+USB drives
+
+DVD
+
+External disks
+
+---
+
+## /mnt
+
+Temporary mount point used by administrators.
+
+Example:
+
+```bash
+mount /dev/sdb1 /mnt
+```
+
+---
+
+## /opt
+
+Contains optional third-party software.
+
+Examples:
+
+```text
+/opt/google
+/opt/microsoft
+/opt/customapp
+```
+
+Enterprise applications often install here.
+
+---
+
+## /proc
+
+Virtual filesystem.
+
+Created dynamically by the kernel.
+
+Contains information about:
+
+* CPU
+* Memory
+* Processes
+* Kernel
+
+Useful files:
+
+```bash
+cat /proc/cpuinfo
+cat /proc/meminfo
+cat /proc/version
+```
+
+---
+
+## /run
+
+Contains runtime information.
+
+Examples:
+
+* PID files
+* Socket files
+* Lock files
+
+Cleared after reboot.
+
+---
+
+## /sbin
+
+Contains system administration commands.
+
+Examples:
+
+```bash
+fsck
+fdisk
+mkfs
+reboot
+shutdown
+```
+
+Modern Linux:
+
+```text
+/sbin -> /usr/sbin
+```
+
+---
+
+## /srv
+
+Contains data served by services.
+
+Examples:
+
+FTP
+
+HTTP
+
+Git
+
+---
+
+## /sys
+
+Virtual filesystem.
+
+Contains hardware and kernel information.
+
+Useful for:
+
+* Drivers
+* Hardware
+* Kernel parameters
+
+---
+
+## /tmp
+
+Stores temporary files.
+
+Anyone can write here.
+
+Usually emptied automatically.
+
+Notice the permissions:
+
+```text
+drwxrwxrwt
+```
+
+The `t` indicates the **sticky bit**, which allows users to create files but prevents them from deleting files owned by other users.
+
+---
+
+## /usr
+
+Largest directory.
+
+Contains:
+
+```text
+/usr/bin
+/usr/lib
+/usr/share
+/usr/include
+/usr/local
+```
+
+Most installed software resides here.
+
+---
+
+## /var
+
+Stores variable data.
+
+Examples:
+
+```text
+/var/log
+/var/cache
+/var/tmp
+/var/spool
+/var/lib
+```
+
+Logs are commonly stored in:
+
+```text
+/var/log
+```
+
+---
+
+## /lost+found
+
+Filesystem recovery directory.
+
+Used by `fsck` to recover damaged files.
+
+---
+
+# 5. Important Configuration Files
+
+## /etc/passwd
+
+Stores user account information.
+
+---
+
+## /etc/shadow
+
+Stores encrypted passwords.
+
+Readable only by root.
+
+---
+
+## /etc/group
+
+Stores group information.
+
+---
+
+## /etc/hostname
+
+Contains the system hostname.
+
+---
+
+## /etc/hosts
+
+Maps hostnames to IP addresses.
+
+Example:
+
+```text
+127.0.0.1 localhost
+::1 localhost
+192.168.1.10 webserver
+```
+
+---
+
+## /etc/resolv.conf
+
+Specifies DNS servers.
+
+Example:
+
+```text
+nameserver 8.8.8.8
+```
+
+---
+
+## /etc/fstab
+
+Specifies which filesystems should be mounted automatically during boot.
+
+---
+
+# 6. File Types
+
+Linux supports multiple file types.
+
+## Regular File
+
+```text
+-
+```
+
+Examples:
+
+* Text files
+* Images
+* Scripts
+
+---
+
+## Directory
+
+```text
+d
+```
+
+Contains files and other directories.
+
+---
+
+## Symbolic Link
+
+```text
+l
+```
+
+Points to another file.
+
+Example:
+
+```bash
+ln -s file shortcut
+```
+
+---
+
+## Block Device
+
+```text
+b
+```
+
+Example:
+
+```text
+/ dev/sda
+```
+
+Used for storage devices.
+
+---
+
+## Character Device
+
+```text
+c
+```
+
+Examples:
+
+Keyboard
+
+Mouse
+
+Terminal
+
+---
+
+## Socket
+
+```text
+s
+```
+
+Used for communication between processes.
+
+---
+
+## Named Pipe (FIFO)
+
+```text
+p
+```
+
+Used for inter-process communication.
+
+---
+
+# 7. File Permissions
+
+Example:
+
+```text
+-rwxr-xr--
+```
+
+Meaning:
+
+```text
+-
+rwx
+r-x
+r--
+```
+
+Owner
+
+Group
+
+Others
+
+Permission values:
+
+```text
+r = 4
+w = 2
+x = 1
+```
+
+Example:
+
+```text
+755
+
+Owner = 7 = rwx
+
+Group = 5 = r-x
+
+Others = 5 = r-x
+```
+
+Common permissions:
+
+| Permission | Meaning                              |
+| ---------- | ------------------------------------ |
+| 644        | Regular file                         |
+| 755        | Executable/script                    |
+| 700        | Private directory                    |
+| 777        | Full access (avoid unless necessary) |
+
+---
+
+# 8. Special Permissions
+
+## SUID
+
+Runs a program with the owner's privileges.
+
+Example:
+
+```bash
+passwd
+```
+
+---
+
+## SGID
+
+Directories:
+
+New files inherit the directory's group.
+
+---
+
+## Sticky Bit
+
+Commonly used on:
+
+```text
+/tmp
+```
+
+Prevents users from deleting files owned by others.
+
+---
+
+# 9. Hard Links vs Symbolic Links
+
+## Hard Link
+
+Points directly to the file's inode.
+
+Cannot span filesystems.
+
+Continues working even if the original filename is deleted.
+
+---
+
+## Symbolic Link
+
+Points to the file's path.
+
+Can span filesystems.
+
+Breaks if the target file is deleted.
+
+---
+
+# 10. Inodes
+
+An inode stores metadata about a file.
+
+It contains:
+
+* Owner
+* Group
+* Permissions
+* File size
+* Timestamps
+* Block locations
+
+It does **not** store the filename.
+
+Useful commands:
+
+```bash
+ls -i
+stat file.txt
+```
+
+---
+
+# 11. Mounting
+
+Linux attaches filesystems to directories called **mount points**.
+
+Example:
+
+```bash
+mount /dev/sdb1 /mnt
+```
+
+View mounted filesystems:
+
+```bash
+mount
+findmnt
+df -h
+```
+
+Unmount:
+
+```bash
+umount /mnt
+```
+
+---
+
+# 12. Common Commands
+
+Navigate:
+
+```bash
+pwd
+cd
+```
+
+List:
+
+```bash
+ls
+ls -la
+```
+
+Create:
+
+```bash
+touch
+mkdir
+```
+
+Copy:
+
+```bash
+cp
+```
+
+Move:
+
+```bash
+mv
+```
+
+Delete:
+
+```bash
+rm
+rmdir
+```
+
+View:
+
+```bash
+cat
+less
+head
+tail
+```
+
+Search:
+
+```bash
+find
+locate
+which
+whereis
+```
+
+Disk Usage:
+
+```bash
+df -h
+du -sh
+```
+
+Filesystem Information:
+
+```bash
+stat
+lsblk
+blkid
+findmnt
+```
+
+---
+
+# 13. Essential Troubleshooting
+
+Check free space:
+
+```bash
+df -h
+```
+
+Find large directories:
+
+```bash
+du -sh /*
+```
+
+Find large files:
+
+```bash
+find / -type f -size +100M
+```
+
+View mounted disks:
+
+```bash
+lsblk
+findmnt
+```
+
+Find inode usage:
+
+```bash
+df -i
+```
+
+---
+
+# 14. Interview Questions
+
+1. What is the difference between `/` and `/root`?
+2. What is stored in `/etc`?
+3. Why is `/proc` called a virtual filesystem?
+4. What is the purpose of `/var/log`?
+5. Difference between `/bin` and `/usr/bin` on modern Linux?
+6. What is a mount point?
+7. Difference between a hard link and a symbolic link?
+8. What is an inode?
+9. Why does `/tmp` have the sticky bit?
+10. What is stored in `/dev`?
+
+---
+
+# 15. Memory Map
+
+| Directory        | Purpose                                     |
+| ---------------- | ------------------------------------------- |
+| `/`              | Root of filesystem                          |
+| `/bin`           | Essential commands                          |
+| `/boot`          | Boot files                                  |
+| `/dev`           | Device files                                |
+| `/etc`           | Configuration files                         |
+| `/home`          | User home directories                       |
+| `/root`          | Root user's home                            |
+| `/lib`, `/lib64` | Shared libraries                            |
+| `/media`         | Auto-mounted removable media                |
+| `/mnt`           | Temporary mount point                       |
+| `/opt`           | Optional third-party software               |
+| `/proc`          | Process and kernel information (virtual)    |
+| `/run`           | Runtime data                                |
+| `/sbin`          | System administration commands              |
+| `/srv`           | Service data                                |
+| `/sys`           | Hardware and kernel information (virtual)   |
+| `/tmp`           | Temporary files                             |
+| `/usr`           | User applications, libraries, documentation |
+| `/var`           | Variable data (logs, caches, databases)     |
+| `/lost+found`    | Filesystem recovery                         |
+
+---
+
+# 16. Recommended Learning Order
+
+1. Filesystem hierarchy (FHS)
+2. Paths (absolute vs relative)
+3. Directory purposes
+4. File types
+5. Permissions and ownership
+6. Links (hard vs symbolic)
+7. Inodes
+8. Mounting and filesystems
+9. Common commands
+10. Troubleshooting disk space and mounts
+11. Configuration files under `/etc`
+12. Practice by exploring each directory on your own system.
+
+---
+
+# 17. Commands to Practice
+
+```bash
+pwd
+ls -la /
+tree -L 2 /
+cd /etc
+cat /etc/hosts
+cat /etc/passwd
+cat /etc/fstab
+ls -l /dev
+cat /proc/cpuinfo
+cat /proc/meminfo
+findmnt
+lsblk
+df -h
+df -i
+du -sh /var/*
+stat /etc/passwd
+ls -i /etc/passwd
+ln file hardlink
+ln -s file symlink
+```

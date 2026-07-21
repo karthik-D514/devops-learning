@@ -1,0 +1,478 @@
+# Git Notes – Repository Setup, Remote Configuration & Troubleshooting
+
+# Objective
+
+Set up a local Git repository, connect it to a remote GitHub repository, and successfully push commits while understanding the purpose of each step and how to troubleshoot common issues.
+
+---
+
+# 1. Initialize a Git Repository
+
+Create a new Git repository inside the current directory.
+
+```bash
+git init
+```
+
+Result:
+
+* Creates a hidden `.git` directory.
+* Starts tracking the directory as a Git repository.
+
+Verify:
+
+```bash
+ls -la
+```
+
+You should see:
+
+```text
+.git/
+```
+
+---
+
+# 2. Check Repository Status
+
+```bash
+git status
+```
+
+Purpose:
+
+* Shows the current branch.
+* Lists modified files.
+* Lists untracked files.
+* Indicates whether files are staged for commit.
+
+Typical states:
+
+* Untracked
+* Modified
+* Staged
+* Committed
+
+---
+
+# 3. Why Empty Folders Are Not Tracked
+
+Git tracks **files**, not directories.
+
+If a directory contains no files:
+
+```text
+Project/
+└── docs/
+```
+
+Git ignores it.
+
+Solution:
+
+Create a placeholder file:
+
+```bash
+touch docs/.gitkeep
+```
+
+or
+
+```bash
+touch docs/README.md
+```
+
+Now Git can track the directory because it contains a file.
+
+---
+
+# 4. Stage Files
+
+Stage everything:
+
+```bash
+git add .
+```
+
+Stage one file:
+
+```bash
+git add filename
+```
+
+Verify:
+
+```bash
+git status
+```
+
+Files should appear under:
+
+```text
+Changes to be committed
+```
+
+---
+
+# 5. Commit Changes
+
+```bash
+git commit -m "Meaningful commit message"
+```
+
+A commit should describe **what changed**, not what command you ran.
+
+Good examples:
+
+```text
+Add Linux filesystem notes
+
+Create Git learning structure
+
+Fix SSH configuration documentation
+```
+
+Avoid:
+
+```text
+Update
+
+Changes
+
+Final
+```
+
+---
+
+# 6. View Commit History
+
+Compact history:
+
+```bash
+git log --oneline
+```
+
+Detailed history:
+
+```bash
+git log
+```
+
+---
+
+# 7. Check Current Branch
+
+```bash
+git branch
+```
+
+or
+
+```bash
+git branch -vv
+```
+
+Shows:
+
+* Current branch
+* Tracking branch
+* Latest commit
+
+---
+
+# 8. View Configured Remote Repositories
+
+```bash
+git remote -v
+```
+
+Expected:
+
+```text
+origin  <repository-url> (fetch)
+origin  <repository-url> (push)
+```
+
+---
+
+# 9. Add a Remote Repository
+
+If no remote exists:
+
+```bash
+git remote add origin <repository-url>
+```
+
+Verify:
+
+```bash
+git remote -v
+```
+
+---
+
+# 10. Change an Existing Remote
+
+If a remote already exists:
+
+```bash
+git remote set-url origin <new-repository-url>
+```
+
+Verify:
+
+```bash
+git remote -v
+```
+
+---
+
+# 11. Push Changes
+
+First push:
+
+```bash
+git push -u origin main
+```
+
+Later pushes:
+
+```bash
+git push
+```
+
+The `-u` option sets the upstream branch so future pushes and pulls can omit the branch name.
+
+---
+
+# 12. Verify the Push
+
+```bash
+git status
+```
+
+Expected:
+
+```text
+On branch main
+Your branch is up to date with 'origin/main'.
+
+nothing to commit, working tree clean
+```
+
+Also verify the commit appears on GitHub.
+
+---
+
+# Troubleshooting
+
+## Error 1
+
+```text
+fatal: 'origin' does not appear to be a git repository
+```
+
+### Cause
+
+No remote repository named `origin` was configured.
+
+### Diagnosis
+
+```bash
+git remote -v
+```
+
+Output:
+
+```text
+(no output)
+```
+
+### Solution
+
+Add the remote:
+
+```bash
+git remote add origin <repository-url>
+```
+
+Verify:
+
+```bash
+git remote -v
+```
+
+---
+
+## Error 2
+
+```text
+error: remote origin already exists.
+```
+
+### Cause
+
+Attempted to add a remote that already existed.
+
+### Incorrect command
+
+```bash
+git remote add origin <repository-url>
+```
+
+### Solution
+
+Update the existing remote instead:
+
+```bash
+git remote set-url origin <repository-url>
+```
+
+---
+
+## Error 3
+
+```text
+ERROR: Repository not found.
+fatal: Could not read from remote repository.
+```
+
+### Meaning
+
+Git successfully contacted GitHub, but the remote repository could not be accessed.
+
+Possible causes:
+
+* Incorrect repository URL
+* Repository renamed
+* Repository deleted
+* Repository owned by a different account
+* No permission to access the repository
+
+### Diagnosis
+
+Check the configured remote:
+
+```bash
+git remote -v
+```
+
+Verify the repository URL.
+
+### Solution
+
+Correct the remote URL:
+
+```bash
+git remote set-url origin <correct-repository-url>
+```
+
+Push again:
+
+```bash
+git push -u origin main
+```
+
+---
+
+# Useful Diagnostic Commands
+
+Current status:
+
+```bash
+git status
+```
+
+Current branch:
+
+```bash
+git branch
+```
+
+Detailed branch information:
+
+```bash
+git branch -vv
+```
+
+View remotes:
+
+```bash
+git remote -v
+```
+
+View only the remote URL:
+
+```bash
+git remote get-url origin
+```
+
+Verify repository root:
+
+```bash
+git rev-parse --show-toplevel
+```
+
+View commit history:
+
+```bash
+git log --oneline
+```
+
+---
+
+# Git Workflow
+
+```text
+Create files
+      │
+      ▼
+git status
+      │
+      ▼
+git add .
+      │
+      ▼
+git status
+      │
+      ▼
+git commit -m "message"
+      │
+      ▼
+git push
+      │
+      ▼
+GitHub Repository
+```
+
+---
+
+# Key Lessons Learned
+
+1. Git tracks **files**, not empty directories.
+2. Always check `git status` before making assumptions.
+3. Verify remotes with `git remote -v`.
+4. Use `git remote add` only when no remote exists.
+5. Use `git remote set-url` to change an existing remote.
+6. Read Git error messages carefully—they usually point to the root cause.
+7. Verify every step before moving to the next one.
+
+---
+
+# Essential Commands Summary
+
+```bash
+git init
+git status
+git add .
+git commit -m "message"
+git log --oneline
+git branch
+git branch -vv
+git remote -v
+git remote add origin <repository-url>
+git remote set-url origin <repository-url>
+git remote get-url origin
+git push -u origin main
+git push
+```

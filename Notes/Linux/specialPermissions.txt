@@ -1,0 +1,656 @@
+# Linux Special Permissions
+
+## Overview
+
+Linux provides three special permissions in addition to the standard read (r), write (w), and execute (x) permissions.
+
+| Special Permission | Numeric Value | Symbolic | Applies To | Purpose |
+|--------------------|--------------:|----------|------------|---------|
+| SUID (Set User ID) | 4000 | u+s | Files | Program runs with the file owner's privileges. |
+| SGID (Set Group ID) | 2000 | g+s | Files & Directories | Program runs with the file group's privileges (files) or new files inherit the directory's group (directories). |
+| Sticky Bit | 1000 | +t | Directories | Prevents users from deleting or renaming files owned by other users. |
+
+---
+
+# 1. SUID (Set User ID)
+
+## What is SUID?
+
+Normally, a program runs with the permissions of the user executing it.
+
+If SUID is set on an executable file, the program temporarily runs with the permissions of the file owner.
+
+```
+Normal Execution:
+
+User ------> Program
+Runs as: User
+
+SUID Execution:
+
+User ------> Program
+Runs as: File Owner
+```
+
+---
+
+## Why is SUID needed?
+
+Some programs require root privileges even when executed by a normal user.
+
+Example:
+
+```bash
+passwd
+```
+
+The `passwd` command updates:
+
+```text
+/etc/shadow
+```
+
+Only the root user can modify this file.
+
+However, any user can change their own password because the `passwd` executable has the SUID bit set.
+
+---
+
+## View SUID
+
+```bash
+ls -l /usr/bin/passwd
+```
+
+Example output:
+
+```text
+-rwsr-xr-x
+```
+
+Notice:
+
+```text
+rws
+```
+
+instead of
+
+```text
+rwx
+```
+
+The **s** replaces the owner's execute permission.
+
+---
+
+## Set SUID
+
+Symbolic:
+
+```bash
+chmod u+s filename
+```
+
+Numeric:
+
+```bash
+chmod 4755 filename
+```
+
+---
+
+## Remove SUID
+
+Symbolic:
+
+```bash
+chmod u-s filename
+```
+
+Numeric:
+
+```bash
+chmod 0755 filename
+```
+
+---
+
+## Verify
+
+```bash
+ls -l filename
+```
+
+Example:
+
+```text
+-rwsr-xr-x
+```
+
+---
+
+## Capital S vs Small s
+
+Small s
+
+```text
+-rwsr-xr-x
+```
+
+Means:
+
+- SUID is enabled.
+- Execute permission exists.
+
+Capital S
+
+```text
+-rwSr-xr-x
+```
+
+Means:
+
+- SUID is enabled.
+- Execute permission is NOT set.
+
+Usually indicates a configuration mistake.
+
+---
+
+## Common SUID Programs
+
+```text
+/usr/bin/passwd
+/usr/bin/su
+/usr/bin/chsh
+/usr/bin/chfn
+```
+
+---
+
+## Find All SUID Files
+
+```bash
+find / -perm -4000 -type f 2>/dev/null
+```
+
+Explanation:
+
+| Option | Meaning |
+|---------|----------|
+| / | Search entire filesystem |
+| -perm -4000 | Search for SUID files |
+| -type f | Only files |
+| 2>/dev/null | Hide permission denied messages |
+
+---
+
+# 2. SGID (Set Group ID)
+
+SGID behaves differently on files and directories.
+
+---
+
+# SGID on Files
+
+## What is SGID?
+
+When an executable has SGID enabled, it runs with the permissions of the file's group instead of the user's primary group.
+
+```
+Normal
+
+User Group -----> Program
+
+SGID
+
+Program runs using File Group
+```
+
+---
+
+## Set SGID
+
+Symbolic:
+
+```bash
+chmod g+s filename
+```
+
+Numeric:
+
+```bash
+chmod 2755 filename
+```
+
+---
+
+## Remove SGID
+
+```bash
+chmod g-s filename
+```
+
+---
+
+## Verify
+
+```bash
+ls -l filename
+```
+
+Example:
+
+```text
+-rwxr-sr-x
+```
+
+Notice:
+
+```text
+r-s
+```
+
+---
+
+# SGID on Directories
+
+This is the most common use of SGID.
+
+---
+
+## Problem
+
+Directory:
+
+```text
+/project
+```
+
+Group:
+
+```text
+developers
+```
+
+Two users:
+
+```text
+alice
+bob
+```
+
+Without SGID:
+
+Alice creates:
+
+```text
+report.txt
+```
+
+Group:
+
+```text
+alice
+```
+
+Bob creates:
+
+```text
+script.sh
+```
+
+Group:
+
+```text
+bob
+```
+
+Permissions become inconsistent.
+
+---
+
+## Solution
+
+Enable SGID.
+
+```bash
+chmod g+s project
+```
+
+Now every new file automatically inherits the directory's group.
+
+Result:
+
+```text
+report.txt -> developers
+
+script.sh -> developers
+```
+
+Everyone in the developers group can collaborate.
+
+---
+
+## Verify
+
+```bash
+ls -ld project
+```
+
+Example:
+
+```text
+drwxrwsr-x
+```
+
+Notice the **s** in the group execute position.
+
+---
+
+## Capital S
+
+```text
+drwxrwSr-x
+```
+
+Means:
+
+- SGID exists.
+- Execute permission is missing.
+
+Usually a mistake.
+
+---
+
+## Find All SGID Files
+
+```bash
+find / -perm -2000 -type f 2>/dev/null
+```
+
+---
+
+# 3. Sticky Bit
+
+Sticky Bit is used only on directories.
+
+---
+
+## Why?
+
+Suppose a directory is writable by everyone.
+
+Example:
+
+```text
+/tmp
+```
+
+Permissions:
+
+```text
+777
+```
+
+Without Sticky Bit:
+
+```
+User A creates file
+
+↓
+
+User B deletes it
+
+↓
+
+No restriction
+```
+
+Anyone could delete anyone else's files.
+
+---
+
+## Sticky Bit Solution
+
+When Sticky Bit is enabled:
+
+Only one of the following can delete a file:
+
+- File owner
+- Directory owner
+- Root
+
+Everyone else is denied.
+
+---
+
+## View Sticky Bit
+
+```bash
+ls -ld /tmp
+```
+
+Example:
+
+```text
+drwxrwxrwt
+```
+
+Notice:
+
+```text
+t
+```
+
+---
+
+## Set Sticky Bit
+
+Symbolic:
+
+```bash
+chmod +t directory
+```
+
+Numeric:
+
+```bash
+chmod 1777 directory
+```
+
+---
+
+## Remove Sticky Bit
+
+```bash
+chmod -t directory
+```
+
+---
+
+## Verify
+
+```bash
+ls -ld directory
+```
+
+Example:
+
+```text
+drwxrwxrwt
+```
+
+---
+
+## Capital T
+
+```text
+drwxrwxrwT
+```
+
+Means:
+
+- Sticky Bit exists.
+- Execute permission is missing.
+
+Usually a configuration error.
+
+---
+
+## Find Sticky Bit Directories
+
+```bash
+find / -perm -1000 -type d 2>/dev/null
+```
+
+---
+
+# Numeric Summary
+
+| Permission | Numeric |
+|------------|---------|
+| SUID | 4000 |
+| SGID | 2000 |
+| Sticky Bit | 1000 |
+
+Examples:
+
+```bash
+chmod 4755 file
+chmod 2755 file
+chmod 1777 directory
+```
+
+---
+
+# Quick Reference
+
+## Add Special Permissions
+
+```bash
+chmod u+s file
+chmod g+s file
+chmod +t directory
+```
+
+---
+
+## Remove Special Permissions
+
+```bash
+chmod u-s file
+chmod g-s file
+chmod -t directory
+```
+
+---
+
+## Verification
+
+```bash
+ls -l file
+ls -ld directory
+```
+
+---
+
+# Real-World Use Cases
+
+## SUID
+
+- `passwd`
+- `su`
+- Programs that require temporary root privileges.
+
+---
+
+## SGID
+
+- Shared project directories.
+- Team collaboration.
+- Development repositories.
+- Shared log directories.
+
+---
+
+## Sticky Bit
+
+- `/tmp`
+- Shared upload directories.
+- Public writable directories.
+
+---
+
+# Interview Questions
+
+### Q1. What are Linux special permissions?
+
+- SUID
+- SGID
+- Sticky Bit
+
+---
+
+### Q2. Which special permission allows a program to run as the file owner?
+
+Answer:
+
+```text
+SUID
+```
+
+---
+
+### Q3. Which special permission allows new files to inherit the parent directory's group?
+
+Answer:
+
+```text
+SGID on directories
+```
+
+---
+
+### Q4. Why is Sticky Bit used?
+
+Answer:
+
+To prevent users from deleting or renaming files owned by other users in a shared directory.
+
+---
+
+### Q5. How do you find all SUID files?
+
+```bash
+find / -perm -4000 -type f 2>/dev/null
+```
+
+---
+
+### Q6. How do you set SGID on a directory?
+
+```bash
+chmod g+s directory
+```
+
+or
+
+```bash
+chmod 2775 directory
+```
+
+---
+
+### Q7. What is the difference between lowercase 's' and uppercase 'S'?
+
+- `s` → Execute permission exists.
+- `S` → Execute permission is missing.
+
+---
+
+### Q8. What is the difference between lowercase 't' and uppercase 'T'?
+
+- `t` → Execute permission exists.
+- `T` → Execute permission is missing.

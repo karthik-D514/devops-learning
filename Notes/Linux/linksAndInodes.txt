@@ -1,0 +1,105 @@
+# Linux Inodes, Hard Links, and Symbolic Links
+
+## Overview
+
+In Linux, a filename is simply a human-readable pointer to a data structure called an **inode**. Understanding how inodes, hard links, and symbolic (soft) links work is fundamental for storage management, filesystem architecture, and system troubleshooting.
+
+---
+
+# 1. Inodes (Index Nodes)
+
+An **inode** (index node) is a data structure on a filesystem that stores metadata about a file.
+
+### What an Inode Stores:
+- Inode number
+- File type (regular file, directory, symbolic link, socket, etc.)
+- Permissions (`rwx` for Owner, Group, Others)
+- File ownership (UID and GID)
+- File size (in bytes)
+- Timestamps:
+  - **atime**: Access time
+  - **mtime**: Modification time (content change)
+  - **ctime**: Change time (metadata/permission change)
+- **Pointers to data blocks** on disk where actual content resides
+
+### What an Inode Does NOT Store:
+- **The Filename**: Filenames are stored separately inside directory files, mapping `filename -> inode number`.
+
+### Useful Commands:
+```bash
+ls -li /etc/hosts     # -i displays the inode number
+stat /etc/hosts       # displays full inode metadata and block information
+```
+
+---
+
+# 2. Hard Links
+
+A **hard link** is an additional directory entry (filename) pointing directly to an existing inode.
+
+### Characteristics:
+- Shares the **exact same inode number** as the target file.
+- All hard links to an inode are **equal peers** (there is no "original" file).
+- Deleting one hard link decrements the link count; data remains on disk until **all** hard links are removed (link count = 0).
+- **Cannot span across different filesystems** (inodes are unique only within a specific filesystem).
+- **Cannot be created for directories** (prevents filesystem loops/cycles).
+
+### Usage & Syntax:
+```bash
+ln /path/to/target /path/to/hardlink
+
+# Example
+ln /var/data/app.conf /var/data/app.conf.bak
+ls -li /var/data/app.conf*    # Output shows identical inode numbers and link count = 2
+```
+
+---
+
+# 3. Symbolic Links (Soft Links / Symlinks)
+
+A **symbolic link** is a special file containing a text string representing a path to another file or directory.
+
+### Characteristics:
+- Has its **own unique inode number**.
+- Points to a **file path**, not directly to data blocks.
+- **Can span across different filesystems**.
+- **Can link to directories**.
+- If the target file is deleted or moved, the symlink becomes **dangling/broken** (returns "No such file or directory" when accessed).
+
+### Usage & Syntax:
+```bash
+ln -s /path/to/target /path/to/symlink
+
+# Example: Link config to web app directory
+ln -s /etc/nginx/nginx.conf /opt/webapp/nginx.conf
+ls -la /opt/webapp/nginx.conf   # Output shows: nginx.conf -> /etc/nginx/nginx.conf
+```
+
+---
+
+# 4. Side-by-Side Comparison
+
+| Feature | Hard Link | Symbolic Link (Soft Link) |
+| :--- | :--- | :--- |
+| **Points to** | Inode Number | File / Directory Path String |
+| **Inode Number** | Same as target | Unique (different from target) |
+| **Target Deletion** | File data intact until all links deleted | Symlink breaks (dangling link) |
+| **Cross-Filesystem** | ❌ No | ✅ Yes |
+| **Directory Support** | ❌ No | ✅ Yes |
+| **Link Count Impact** | Increments Target Inode Link Count | No impact on Target Link Count |
+| **File Type Indicator** | Regular file (`-`) | Link file (`l`) |
+
+---
+
+# 5. Common Troubleshooting & Commands
+
+```bash
+# Check if a symlink is broken
+file /path/to/symlink
+
+# Find all hard links associated with a specific inode number
+find / -inum 123456 2>/dev/null
+
+# Display target of a symlink
+readlink /path/to/symlink
+```

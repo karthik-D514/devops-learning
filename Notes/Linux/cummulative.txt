@@ -1,0 +1,244 @@
+# Linux Fundamentals — Study Notes
+---
+
+## Topic 1: Linux Filesystem Hierarchy
+
+### Core Directories
+
+| Directory | Purpose | Examples |
+|---|---|---|
+| `/etc` | **System configuration files** (plain text, human-readable) | `/etc/ssh/sshd_config`, `/etc/hosts`, `/etc/fstab`, `/etc/resolv.conf` |
+| `/bin` → `/usr/bin` | **Essential user binaries** (commands available to all users) | `ls`, `grep`, `cp`, `nginx` binary |
+| `/sbin` → `/usr/sbin` | **System/admin binaries** (root-level commands) | `fdisk`, `systemctl`, `ip` |
+| `/usr` | **User programs + shared libraries** (non-essential for booting) | `/usr/bin`, `/usr/lib`, `/usr/share` |
+| `/var` | **Variable data** — changes dynamically at runtime | `/var/log/`, mail spools, package caches, databases |
+| `/tmp` | **Temporary files** — volatile, often cleared on reboot | Session files, build artifacts |
+| `/opt` | **Optional/third-party software** not managed by the distro's package manager | Custom agents, proprietary apps, manual `.tar.gz` installs |
+| `/home` | **User home directories** | `/home/username/` |
+| `/root` | **Root user's home directory** | Separate from `/home` |
+| `/run` | **Runtime process data** — PID files, sockets (cleared on reboot) | `/run/nginx.pid`, `/run/sshd.pid` |
+| `/proc` | **Virtual filesystem** — exposes kernel and process info as files | `/proc/cpuinfo`, `/proc/meminfo` |
+| `/sys` | **Virtual filesystem** — hardware/kernel subsystem info | Device and driver information |
+| `/dev` | **Device files** — represents hardware and virtual devices | `/dev/sda` (disk), `/dev/null`, `/dev/tty` |
+
+### Key Rule
+> `/etc` = configuration files ONLY. Binaries live in `/bin`, `/usr/bin`, `/sbin`.
+
+### Checking tools
+```bash
+ls /etc               # list config files
+file /usr/bin/nginx   # confirms it's an ELF executable (binary)
+which nginx           # shows path of binary
+rpm -ql nginx         # lists ALL files an RPM placed on disk
+```
+
+---
+
+## Topic 2: Special Permissions (SUID, SGID, Sticky Bit)
+
+### Standard Permission Review
+Permissions apply to three entities: **User (owner)**, **Group**, **Others**
+
+| Symbol | Octal | Meaning |
+|---|---|---|
+| `r` | 4 | Read |
+| `w` | 2 | Write |
+| `x` | 1 | Execute |
+| `-` | 0 | No permission |
+
+### Octal Combinations — Memorise This
+
+| Octal | Binary | Permissions |
+|---|---|---|
+| `7` | 111 | `rwx` |
+| `6` | 110 | `rw-` |
+| `5` | 101 | `r-x` |
+| `4` | 100 | `r--` |
+| `0` | 000 | `---` |
+
+### Special Permission Bits
+
+| Bit | Octal | Set On | Effect | Visual |
+|---|---|---|---|---|
+| **SUID** | `4` | Executable files | Process runs with the **file owner's** permissions | `rws` in owner execute position |
+| **SGID** | `2` | Executable files | Process runs with the **file group's** permissions | `r-s` in group execute position |
+| **SGID** | `2` | Directories | New files/dirs created inside inherit the **directory's group** | `r-s` in group execute position |
+| **Sticky** | `1` | Directories | Only the **file owner** (or root) can delete their own files | `rwt` in others execute position |
+
+### Real-World Examples
+
+```bash
+ls -la /usr/bin/passwd
+# -rwsr-xr-x 1 root root ... /usr/bin/passwd
+# 's' in OWNER position = SUID
+# Normal users run passwd as root to write to /etc/shadow
+
+ls -la /tmp
+# drwxrwxrwt ... /tmp
+# 't' in OTHERS position = Sticky Bit
+# Anyone can write to /tmp but cannot delete each other's files
+```
+
+### Setting Special Permissions
+
+```bash
+# Octal method (prepend the special bit)
+chmod 4755 file.sh       # SUID + rwxr-xr-x
+chmod 2755 /shared       # SGID + rwxr-xr-x
+chmod 1777 /public       # Sticky + rwxrwxrwx
+
+# Symbolic method
+chmod u+s file.sh        # SUID
+chmod g+s /shared        # SGID
+chmod o+t /public        # Sticky
+```
+
+### Shared Directory Setup (SGID Pattern)
+
+```bash
+groupadd devops
+mkdir /shared-ops
+chown :devops /shared-ops        # Set group ownership
+chmod 2770 /shared-ops           # SGID + rwx for owner and group only
+# Result: every file created inside /shared-ops belongs to 'devops' group
+```
+
+### Common Mistakes
+- `s` in **owner** execute position = **SUID** (NOT SGID)
+- `s` in **group** execute position = **SGID**
+- Sticky bit applies to **directories**, not files
+- `5` = `r-x` (read + execute). NOT `r-w`. Write would be `6`.
+
+---
+
+## Topic 3: Hard Links, Soft Links & Inodes
+
+### Inodes
+
+Every file on a Linux filesystem has an **inode** — a data structure that stores metadata about the file.
+
+**Inode stores:**
+- Inode number
+- File type (regular, directory, symlink, etc.)
+- Permissions
+- Owner (UID) and Group (GID)
+- File size
+- Timestamps (access, modify, change)
+- **Pointers to data blocks on disk** (the actual content)
+
+**Inode does NOT store:**
+- The filename (filenames are stored in directory entries, which map name → inode number)
+
+```bash
+ls -li /etc/hosts     # -i flag shows inode number
+stat /etc/hosts       # full inode info: inode, links, size, timestamps
+```
+
+> Think of it as: **Filename = label on a shelf**, **Inode = the actual book**
+
+---
+
+### Hard Links
+
+A hard link is a **second directory entry pointing to the same inode**.
+
+```bash
+ln original.txt hardlink.txt
+```
+
+```
+hardlink.txt ──┐
+                ├──► Inode 12345 ──► Data Blocks on disk
+original.txt ──┘
+```
+
+**Rules:**
+- Both names share the **same inode number** — they are equal peers, neither is the "original"
+- Deleting one does **not** delete the data — data is freed only when **all hard links are removed** (inode link count reaches 0)
+- **Cannot cross filesystems** — each filesystem has its own inode table; you cannot reference another filesystem's inode
+- **Cannot link to directories** — would create cycles in the filesystem tree, breaking recursive operations, `..` resolution, and `fsck`
+
+```bash
+ls -li file1 hardlink1    # Both show same inode number
+stat file1                # "Links: 2" confirms two hard links
+```
+
+---
+
+### Soft Links (Symbolic Links / Symlinks)
+
+A soft link (symlink) is a **special file that contains a path string pointing to another file or directory**.
+
+```bash
+ln -s /etc/nginx/nginx.conf /opt/app/nginx.conf
+#     ^ TARGET (what it points to)  ^ LINK (new path)
+```
+
+```
+/opt/app/nginx.conf ──► "/etc/nginx/nginx.conf" ──► Inode 99999 ──► Data
+```
+
+**Rules:**
+- Has its **own inode** (different inode number from the target)
+- **Can cross filesystems** — only stores a path string, not an inode reference
+- **Can link to directories** — widely used for this (e.g., `/lib` → `/usr/lib`)
+- If target is deleted → symlink **becomes dangling** (still exists on disk, but accessing it gives "No such file or directory")
+- You can create a symlink to a path that doesn't yet exist (useful for pre-creating config references)
+
+```bash
+ls -la /opt/app/nginx.conf
+# lrwxrwxrwx ... /opt/app/nginx.conf -> /etc/nginx/nginx.conf
+# 'l' at start = symlink, '->' shows target
+```
+
+---
+
+### Hard Link vs Soft Link — Side-by-Side
+
+| Property | Hard Link | Soft Link (Symlink) |
+|---|---|---|
+| Points to | Inode (data) | File path (string) |
+| Own inode? | No — shares target's inode | Yes — has its own inode |
+| Original deleted? | ✅ Still works | ❌ Becomes dangling |
+| Cross filesystems? | ❌ No | ✅ Yes |
+| Link to directories? | ❌ No (kernel prevents it) | ✅ Yes |
+| Identified by | Same inode number in `ls -li` | `l` in `ls -la`, shows `->` |
+| Link count effect | Increments inode link count | No effect on target's link count |
+
+---
+
+### Practical Commands
+
+```bash
+# Hard link
+ln /path/to/target /path/to/link
+
+# Soft link
+ln -s /path/to/target /path/to/link
+
+# Check inode numbers
+ls -li file1 file2
+
+# Full inode info
+stat filename
+
+# Find all hard links to the same inode
+find / -inum 12345 2>/dev/null
+
+# Check if a symlink is dangling
+file symlink.txt          # "broken symbolic link" if dangling
+readlink symlink.txt      # shows where it points
+```
+
+### Common Use Cases
+
+| Use Case | Type | Why |
+|---|---|---|
+| Config file expected at two paths | Symlink | May cross filesystems; symlinks can target directories too |
+| Backup that survives original deletion | Hard link | Data persists until all links removed |
+| `/lib` → `/usr/lib` (OS-level) | Symlink | Directory link (hard links to dirs not allowed) |
+| Pointing to versioned binary (`python` → `python3.11`) | Symlink | Easy to update by changing the symlink |
+
+---
+
+

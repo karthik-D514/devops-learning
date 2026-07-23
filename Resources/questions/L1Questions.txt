@@ -1,0 +1,488 @@
+# Linux & Git Interview Questions
+## Experience Level: 1–2 Years
+## Focus: Linux Administration, Platform Engineering, DevOps
+
+---
+
+# Linux Permissions
+
+### 1.
+
+A user can read a file but cannot execute it.
+
+Explain all possible reasons.
+
+---
+
+### 2.
+
+A user owns a file but still cannot modify it.
+
+What could cause this?
+
+---
+
+### 3.
+
+Developers report they cannot access files inside a directory even though the files have 644 permissions.
+
+How would you troubleshoot?
+
+---
+
+### 4.
+
+Explain the difference between permissions on files and permissions on directories.
+
+Why are they evaluated differently?
+
+---
+
+### 5.
+
+What happens internally when you execute:
+
+```bash
+chmod 755 file
+```
+
+---
+
+### 6.
+
+How does umask affect newly created files?
+
+How would you verify it?
+
+---
+
+### 7.
+
+A directory has permission:
+
+```
+drwx------
+```
+
+A file inside has:
+
+```
+-rwxrwxrwx
+```
+
+Can another user execute the file?
+
+Explain why.
+
+---
+
+### 8.
+
+A deployment script suddenly stopped executing after a maintenance activity.
+
+How would you investigate?
+
+---
+
+# Special Permissions
+
+### 9.
+
+Explain the complete execution flow of a SUID program.
+
+---
+
+### 10.
+
+Why is the passwd command implemented using SUID instead of simply granting users write access to /etc/shadow?
+
+---
+
+### 11.
+
+What security risks do SUID binaries introduce?
+
+How would you audit them?
+
+---
+
+### 12.
+
+Your security team asks you to identify unnecessary SUID binaries.
+
+How would you proceed?
+
+---
+
+### 13.
+
+A shared project directory contains files created by multiple developers.
+
+Some files belong to unexpected groups.
+
+Explain the likely causes.
+
+---
+
+### 14.
+
+Why is SGID preferred over manually changing group ownership every time?
+
+---
+
+### 15.
+
+Explain how SGID behaves differently on files versus directories.
+
+---
+
+### 16.
+
+A directory is world writable.
+
+Why is Sticky Bit still required?
+
+---
+
+### 17.
+
+What would happen if Sticky Bit were removed from /tmp?
+
+---
+
+### 18.
+
+Explain the difference between
+
+```
+drwxrwsr-x
+
+and
+
+drwxrwxr-t
+```
+
+---
+
+# Processes
+
+### 19.
+
+A process is consuming 100% CPU.
+
+Describe your investigation from beginning to end.
+
+---
+
+### 20.
+
+A process refuses to terminate.
+
+What could be happening?
+
+---
+
+### 21.
+
+Difference between SIGTERM and SIGKILL.
+
+When should each be used?
+
+---
+
+### 22.
+
+Explain how Linux creates a new process.
+
+---
+
+### 23.
+
+What happens to orphan and zombie processes?
+
+---
+
+### 24.
+
+A process restarts immediately after you kill it.
+
+What possibilities would you investigate?
+
+---
+
+### 25.
+
+How would you identify which service owns a particular running process?
+
+---
+
+### 26.
+
+Explain the difference between
+
+```bash
+ps -ef
+
+ps aux
+
+top
+
+pstree
+```
+
+When would you use each?
+
+---
+
+### 27.
+
+How would you determine whether high CPU usage originates from user space or kernel space?
+
+---
+
+### 28.
+
+A Java application PID changes every few minutes.
+
+Is that normal?
+
+How would you investigate?
+
+---
+
+# systemd
+
+### 29.
+
+Explain the complete lifecycle of a systemd service.
+
+---
+
+### 30.
+
+Difference between:
+
+```
+active
+
+enabled
+
+loaded
+
+failed
+```
+
+---
+
+### 31.
+
+A service works when started manually but fails after reboot.
+
+How would you troubleshoot?
+
+---
+
+### 32.
+
+Difference between
+
+```
+restart
+
+reload
+
+daemon-reload
+```
+
+---
+
+### 33.
+
+How would you identify why a service failed during startup?
+
+---
+
+### 34.
+
+A service exits immediately after startup.
+
+List your troubleshooting approach.
+
+---
+
+### 35.
+
+Explain how systemd determines service startup order.
+
+---
+
+### 36.
+
+What information do you expect to obtain from journalctl that systemctl status does not provide?
+
+---
+
+### 37.
+
+How would you investigate a service that intermittently fails?
+
+---
+
+# Git
+
+### 38.
+
+Explain the Git object model at a high level.
+
+---
+
+### 39.
+
+Describe what happens internally during:
+
+```bash
+git add
+```
+
+---
+
+### 40.
+
+Describe what happens internally during:
+
+```bash
+git commit
+```
+
+---
+
+### 41.
+
+What is the purpose of the staging area?
+
+Why doesn't Git commit directly from the working directory?
+
+---
+
+### 42.
+
+A teammate says:
+
+"My changes disappeared."
+
+How would you investigate?
+
+---
+
+### 43.
+
+A repository was cloned successfully yesterday.
+
+Today SSH authentication fails.
+
+Explain your troubleshooting process.
+
+---
+
+### 44.
+
+Why are empty directories not tracked by Git?
+
+---
+
+### 45.
+
+Explain the relationship between:
+
+Working Tree
+
+↓
+
+Index
+
+↓
+
+Local Repository
+
+↓
+
+Remote Repository
+
+---
+
+### 46.
+
+How do you verify that your local repository is synchronized with the remote?
+
+---
+
+# Production Scenarios
+
+### 47.
+
+Users suddenly receive "Permission denied."
+
+You have no additional information.
+
+Walk through your investigation.
+
+---
+
+### 48.
+
+Developers cannot execute deployment scripts.
+
+What would you check first?
+
+What would you check next?
+
+---
+
+### 49.
+
+An application works when executed by root but fails for normal users.
+
+Explain your troubleshooting process.
+
+---
+
+### 50.
+
+A service was working yesterday but fails after a package update.
+
+Describe your investigation strategy.
+
+---
+
+### 51.
+
+A Git push fails in a CI/CD pipeline but succeeds from your laptop.
+
+What would you investigate?
+
+---
+
+### 52.
+
+Your manager says:
+
+"The application is down."
+
+You have shell access.
+
+What are the first ten things you check, in order?
+
+---
+
+# Interview Rule
+
+During our mock interviews:
+
+- One question at a time.
+- Expect follow-up questions.
+- Explain your reasoning before commands.
+- Justify every troubleshooting step.
+- Avoid guessing.
+- If you don't know, explain how you would find the answer.
+- I will interrupt vague answers just like a real interviewer.
+- The interview ends only when I am satisfied with your depth of understanding.

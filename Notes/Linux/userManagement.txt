@@ -1,0 +1,234 @@
+# Linux User and Group Management
+
+## Overview
+
+User and group management in Linux controls system access, permissions, process isolation, and user environment setup. Accounts are divided into **Root (Superuser)**, **System/Service Accounts**, and **Regular Human Accounts**.
+
+---
+
+# 1. Critical User Files
+
+### A. `/etc/passwd` (Account Metadata — World-Readable)
+Stores user account definitions. Every user can read this file (required for tools like `ls -l` to resolve UIDs to names).
+
+```text
+username:x:UID:GID:Comment/GECOS:HomeDirectory:DefaultShell
+```
+
+- **UID 0**: `root` (Superuser privileges).
+- **UID 1–999**: System / Service accounts (e.g., `nginx`, `sshd`).
+- **UID 1000+**: Regular human accounts.
+- **DefaultShell**: Program launched upon login. Use `/sbin/nologin` or `/usr/bin/false` for service accounts to block SSH/shell logins.
+
+---
+
+### B. `/etc/shadow` (Encrypted Passwords — Root Only)
+Stores password hashes and expiration policies. Restricted to mode `0400` / `0000` (root only) for security.
+
+```text
+username:encrypted_hash:lastchanged:min:max:warn:inact:expire:flag
+```
+
+- **Password Hash Prefixes**:
+  - `$6$` = SHA-512
+  - `$y$` = Yescrypt
+- **Account Locking**: A `!` or `*` at the start of the password hash field indicates the password is **locked** (cannot log in with password authentication).
+
+---
+
+### C. `/etc/group` & `/etc/gshadow`
+- `/etc/group`: Defines groups, Primary GIDs, and lists secondary group members.
+- `/etc/skel/`: Template directory containing default dotfiles (`.bashrc`, `.bash_profile`) copied to a new user's home folder during `useradd -m`.
+
+---
+
+# 2. Key Management Commands
+
+### User Creation (`useradd`)
+```bash
+# Human User (Home dir, custom shell, primary & secondary groups)
+useradd -m -s /bin/bash -g devops -G wheel,docker david
+
+# Service Account (System user, no login shell, no home dir)
+useradd -r -M -s /sbin/nologin grafana
+```
+
+| Flag | Purpose |
+|---|---|
+| `-m` | Create home directory (populates from `/etc/skel`) |
+| `-M` | Do **NOT** create home directory |
+| `-r` | Create system account (UID < 1000) |
+| `-s <shell>` | Specify default login shell (`/bin/bash`, `/sbin/nologin`) |
+| `-d <path>` | Specify custom home directory path |
+| `-g <group>` | Set **Primary** group |
+| `-G <group1,group2>` | Set **Secondary** (supplementary) groups |
+
+---
+
+### Modifying Users (`usermod`)
+```bash
+# ALWAYS USE -a WITH -G WHEN ADDING SECONDARY GROUPS!
+usermod -aG secops alex   # Appends secops without wiping existing groups
+
+# Lock & Unlock User Passwords
+usermod -L alex           # Locks account (prepends ! in /etc/shadow)
+usermod -U alex           # Unlocks account
+
+# Change Shell
+usermod -s /bin/bash deployer
+```
+
+> ⚠️ **SECURITY WARNING**: Running `usermod -G secops alex` WITHOUT `-a` will **delete** `alex` from all other secondary groups! Always use `usermod -aG`.
+
+---
+
+### User Deletion (`userdel`)
+```bash
+userdel alex        # Deletes user account, keeps home directory
+userdel -r alex     # Deletes user account AND removes home directory + mail spool
+```
+
+---
+
+# 3. Linux User Account Types
+
+| Account Type | UID Range | Home Directory | Login Shell | Purpose & Use Case |
+|---|---|---|---|---|
+| **Root (Superuser)** | `0` | `/root` | `/bin/bash` | Full system control. Unrestricted privileges. |
+| **System Accounts** | `1–999` | None or specific (`/var/lib/...`) | `/sbin/nologin` or `/usr/bin/false` | Created by RPMs for OS services (e.g., `sshd`, `chrony`, `polkitd`). |
+| **Service Accounts** | `1–999` (or `1000+`) | Optional (depending on app) | `/sbin/nologin` | Created for applications/agents (e.g., `grafana`, `datadog`, `jenkins_runner`). Prevents interactive login. |
+| **Human Users** | `1000+` | `/home/username` | `/bin/bash` or `/bin/zsh` | Regular engineers, admins, and contractors requiring interactive sessions. |
+
+---
+
+# 4. Home Directories & Manual Creation
+
+### Purpose & Requirements:
+- Holds user-specific files, SSH keys (`~/.ssh`), and shell configuration files.
+- **Required for**: Human users who log in interactively.
+- **Not Required for**: Background service accounts (`-M` flag).
+
+### Manually Creating & Fixing a Home Directory:
+If a user was created without a home directory (`useradd -M`) and needs one later:
+
+```bash
+# 1. Create the directory manually
+sudo mkdir -p /home/david
+
+# 2. Copy skeleton files to populate default environment
+sudo cp -r /etc/skel/. /home/david/
+
+# 3. Set proper ownership (User and Primary Group) recursively
+sudo chown -R david:secops /home/david
+
+# 4. Set secure permissions (700 or 750)
+sudo chmod 700 /home/david
+
+# 5. Update user's record in /etc/passwd
+sudo usermod -d /home/david david
+```
+
+---
+
+# 5. Primary vs Secondary Groups
+
+- **Primary Group**: Set at user creation (`-g`). Stored in field 4 of `/etc/passwd`. Every file created by the user initially inherits this group.
+- **Secondary (Supplementary) Groups**: Additional group memberships (`-G`). Listed in `/etc/group`. Grants permissions to extra resources (e.g. `docker`, `wheel`, `sudo`).
+
+```bash
+# Create and modify groups
+sudo groupadd secops
+sudo groupmod -n sec-team secops
+sudo groupdel sec-team
+```
+
+---
+
+# 6. User Verification Tools
+
+Before and after modifying users, verify account state using these commands:
+
+```bash
+# 1. Check User ID, Primary GID, and Secondary Groups
+id david
+# Output: uid=1001(david) gid=1001(secops) groups=1001(secops),10(wheel),993(docker)
+
+# 2. List groups for a specific user
+groups david
+
+# 3. Inspect account definition in /etc/passwd
+grep '^david:' /etc/passwd
+
+# 4. Check password/lock status in /etc/shadow (requires root)
+sudo grep '^david:' /etc/shadow
+```
+
+---
+
+# 7. `/etc/skel` (Skeleton Directory)
+
+- **Purpose**: `/etc/skel` contains template files (default `.bashrc`, `.bash_profile`, `.bash_logout`) used to initialize a new user's environment.
+- **How it works**: When `useradd -m` executes, the files inside `/etc/skel/` are automatically copied into the newly created `/home/username/` directory and ownership is assigned to that user.
+- **Common Issues**: If `/etc/skel` files are corrupted, missing, or copied without hidden files (`.`), the user's shell environment will not initialize correctly.
+
+---
+
+# 8. Bash Initialization Files (Dotfiles)
+
+When a Bash shell starts, it reads specific configuration files depending on the shell type:
+
+### File Definitions:
+- **`.bash_profile`**: Executed for **Login Shells** (e.g. logging in via SSH or console). Sets environment variables (like `PATH`, `EXPORT`) and calls `.bashrc`.
+- **`.bashrc`**: Executed for **Interactive Non-Login Shells** (e.g. opening a terminal subshell inside an existing session). Contains local aliases, functions, and prompt settings.
+- **`.bash_logout`**: Executed when an interactive login shell exits (used for cleanup or clearing terminal).
+
+### Login vs Interactive Shell Flow:
+
+```text
+[SSH / Console Login] ──► Reads /etc/profile
+                                 │
+                                 ▼
+                         Reads ~/.bash_profile
+                                 │
+                                 ▼
+                         Reads ~/.bashrc ──► Reads /etc/bashrc
+```
+
+---
+
+# 9. Bash Prompt (`PS1`) & Aliases
+
+The Bash terminal prompt is controlled by the **`PS1`** environment variable defined inside `.bashrc` or `/etc/bashrc`.
+
+- **Default PS1 Format**: `[\u@\h \W]\$ `
+  - `\u` = Username
+  - `\h` = Hostname
+  - `\W` = Current working directory basename
+  - `\$` = `#` for root, `$` for regular users
+
+### Why the prompt becomes `-bash-4.2$` or `-bash-5.1$`:
+This happens when `.bashrc` or `.bash_profile` is **missing** from the user's home directory. Without these files, Bash cannot set the `PS1` variable and defaults to displaying the shell name and version (`-bash-4.2$`).
+
+### Restoring Default Prompt & Aliases:
+Copy missing skeleton files back to the user's home directory, fix ownership, and source `.bashrc`:
+```bash
+sudo cp /etc/skel/.bash* /home/david/
+sudo chown david:secops /home/david/.bash*
+source ~/.bashrc
+```
+
+---
+
+# 10. Troubleshooting & Security Best Practices
+
+1. **UID 0 Security Audit Risk**: Any user account with `UID 0` in `/etc/passwd` possesses full `root` superuser privileges, regardless of its username. Never assign `UID 0` to non-root accounts.
+2. **Broken Shell Prompts (`-bash-4.2$`)**: Caused by missing `.bashrc` or `.bash_profile` in the user's home directory. Copy them from `/etc/skel/`.
+3. **CI/CD Deployment Accounts**: Require a valid shell (e.g. `/bin/bash`) for remote SSH command execution. Secure them using SSH key restrictions in `~/.ssh/authorized_keys` (`command="..."`).
+
+| Symptom | Root Cause | Resolution |
+|---|---|---|
+| Prompt displays `-bash-4.2$` | Missing `.bashrc` or `.bash_profile` | `cp /etc/skel/.bash* /home/user/ && chown user:group /home/user/.bash*` |
+| `Permission denied` on home directory | Wrong ownership or permissions | `chown -R user:group /home/user && chmod 700 /home/user` |
+| SSH login fails with `Permission denied` | User shell set to `/sbin/nologin` | `usermod -s /bin/bash username` |
+| User lost secondary group access | `usermod -G` ran without `-a` | `usermod -aG group1,group2 username` |
+| Password authentication fails | Account is locked (`!` in `/etc/shadow`) | `usermod -U username` |

@@ -1,0 +1,442 @@
+
+
+An Operating System is system software that acts as a bridge between applications/users and the computer hardware.
+
+It manages hardware resources and provides services so that applications can run safely and efficiently.
+
+------------------------------------------------------------
+
+Simple Example
+
+Suppose Chrome wants to open a file.
+
+Chrome does NOT directly talk to the SSD.
+
+Instead
+
+Chrome
+ ↓
+Operating System
+ ↓
+SSD
+
+The OS performs the work and returns the result.
+
+------------------------------------------------------------
+
+Responsibilities of an Operating System
+
+1. CPU Management
+
+The OS decides which program gets CPU time.
+
+2. Memory Management
+
+The OS allocates RAM to applications.
+
+3. Storage Management
+
+The OS reads and writes files.
+
+4. Device Management
+
+The OS controls keyboards, mice, printers, USB devices, disks, etc.
+
+5. Security
+
+The OS prevents applications from interfering with one another.
+
+6. Process Management
+
+The OS creates, schedules and terminates processes.
+
+7. Networking
+
+The OS manages network communication.
+
+------------------------------------------------------------
+
+Why do we need an Operating System?
+
+Without an Operating System,
+
+every application would have to
+
+- communicate with hardware
+- manage memory
+- schedule CPU
+- communicate with storage
+- communicate with network cards
+
+This would become extremely difficult.
+
+Different applications could even fight for hardware resources.
+
+The OS solves these problems.
+
+------------------------------------------------------------
+
+Example
+
+Suppose
+
+Chrome needs CPU.
+
+Spotify needs CPU.
+
+VS Code needs CPU.
+
+Without an OS
+
+they all try to use the CPU directly.
+
+Chaos.
+
+With an OS
+
+The OS decides
+
+who gets CPU
+when
+and for how long.
+
+------------------------------------------------------------
+
+# Chapter 3 - Linux
+
+Linux is an open-source, Unix-like operating system built around the Linux kernel.
+
+Linux is widely used in
+
+- Servers
+- Cloud Computing
+- Supercomputers
+- Embedded Devices
+- DevOps
+- Platform Engineering
+
+------------------------------------------------------------
+
+Why is Linux popular?
+
+Linux provides
+
+- Stability
+- Security
+- High Performance
+- Strong Networking
+- Automation
+- Powerful Command Line
+- Flexibility
+
+------------------------------------------------------------
+
+Does Windows support automation?
+
+YES.
+
+Windows supports
+
+- PowerShell
+- Batch Scripts
+- Python
+- Scheduled Tasks
+
+Automation is NOT unique to Linux.
+
+Linux is simply more common in servers and cloud infrastructure.
+
+------------------------------------------------------------
+
+# Chapter 4 - What does Unix-like mean?
+
+Unix was an operating system developed at Bell Labs in the 1970s.
+
+It introduced many ideas:
+
+- Everything is a file
+- Multi-user systems
+- Multitasking
+- Powerful shell
+- Small command-line tools
+- Permissions
+- Hierarchical file system
+
+Linux was built independently but follows many of these ideas.
+
+Therefore,
+
+Linux is called
+
+Unix-like
+
+It behaves similarly but is not the original Unix.
+
+------------------------------------------------------------
+
+# Chapter 5 - Why doesn't Windows become Unix?
+
+Windows has millions of existing users and applications.
+
+Changing Windows into a Unix-like operating system would break compatibility.
+
+Instead,
+
+Microsoft added Linux features to Windows.
+
+Examples
+
+- WSL
+- OpenSSH
+- PowerShell
+- Git
+- Linux Containers
+
+This preserves compatibility while supporting modern development workflows.
+
+------------------------------------------------------------
+
+# Chapter 6 - CPU
+
+CPU stands for
+
+Central Processing Unit.
+
+The CPU is often called
+
+"The Brain of the Computer."
+
+Responsibilities
+[O
+- Execute instructions
+- Perform calculations
+- Run programs
+- Make logical decisions
+
+Without the CPU,
+
+nothing can be processed.
+
+------------------------------------------------------------
+
+# Chapter 8 - VRAM
+
+VRAM stands for
+
+Video Random Access Memory.
+
+VRAM belongs to the GPU.
+
+It stores
+
+- images
+- textures
+- videos
+- graphics
+
+CPU mainly uses RAM.
+
+GPU mainly uses VRAM.
+
+------------------------------------------------------------
+
+# Chapter 9 - Virtual Memory
+
+Virtual Memory is a memory management technique.
+
+Every process believes it owns a large continuous block of memory.
+
+Actually,
+
+the Operating System translates
+
+Virtual Address
+
+↓
+
+Physical RAM Address
+
+Advantages
+
+- Process isolation
+- Security
+- Easier memory management
+
+------------------------------------------------------------
+
+# Chapter 10 - Swap Memory
+
+Swap is disk space used as an extension of RAM.
+
+Suppose
+
+RAM = Full
+
+Instead of crashing,
+
+Linux moves less frequently used memory pages
+
+RAM
+↓
+
+Swap (Disk)
+
+This creates free RAM for active programs.
+
+Important
+
+Swap is MUCH slower than RAM.
+
+------------------------------------------------------------
+
+# Chapter 11 - Pages
+
+The Operating System does not manage RAM byte by byte.
+
+Instead,
+
+it divides memory into fixed-size blocks called
+
+Pages
+
+Typical size
+
+4 KB
+
+Memory management becomes easier because the OS moves and tracks pages rather than individual bytes.
+
+------------------------------------------------------------
+
+# Chapter 12 - Memory Management
+
+Memory Management means
+
+The Operating System efficiently manages RAM.
+
+Responsibilities
+
+- Allocate memory
+- Free memory
+- Protect processes
+- Prevent memory conflicts
+- Use virtual memory
+- Use swap if necessary
+
+Common Techniques
+
+- Paging
+- Segmentation
+- Virtual Memory
+- Swapping
+- Memory Allocation
+- Page Replacement
+
+------------------------------------------------------------
+
+# Chapter 13 - CPU Scheduling
+
+CPU Scheduling decides
+
+Which process gets CPU time?
+
+Remember
+
+CPU Scheduling
+
+≠
+
+Memory Management
+
+These are different concepts.
+
+Common Scheduling Algorithms
+
+- FCFS (First Come First Served)
+- Round Robin
+- Priority Scheduling
+- Shortest Job First
+
+------------------------------------------------------------
+
+Round Robin
+
+Every process gets a small time slice.
+
+If unfinished,
+
+the process goes to the back of the queue.
+
+Fairness is the main objective.
+
+------------------------------------------------------------
+
+Priority Scheduling
+
+Higher-priority processes execute before lower-priority ones.
+
+------------------------------------------------------------
+
+FCFS
+
+The first process to arrive runs first.
+
+------------------------------------------------------------
+
+# Chapter 14 - Technique vs Algorithm
+
+Technique
+
+General approach.
+
+Example
+
+Virtual Memory
+
+Algorithm
+
+Step-by-step procedure.
+
+Example
+
+Round Robin
+
+Example
+
+Technique
+
+"I will travel by car."
+
+Algorithm
+
+"I'll take Highway A,
+then Exit 12,
+then turn left."
+
+------------------------------------------------------------
+
+# Chapter 15 - Linux vs Windows (Interview)
+
+Linux is often preferred for servers because
+
+- Stable
+- Secure
+- Lightweight
+- Highly customizable
+- Strong command-line tools
+- Automation friendly
+- Cloud ecosystem support
+
+Windows is also an excellent operating system.
+
+It is commonly preferred for
+
+- Desktop environments
+- Microsoft technologies
+- Active Directory
+- .NET workloads
+- GUI-based administration
+
+
+------------------------------------------------------------
+
+

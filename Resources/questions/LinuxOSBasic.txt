@@ -1,0 +1,18 @@
+Suppose two applications both need 4 GB of RAM, but the system only has 4 GB available. How do you think the operating system decides what happens?
+
+What is virtual memory?
+What is swap memory?
+
+                    Computer
+                        │
+        ┌───────────────┴───────────────┐
+        │                               │
+      CPU                            Memory
+        │                               │
+ CPU Scheduling                 Memory Management
+ Algorithms                      Techniques
+        │                               │
+ Round Robin                  Paging
+ Priority                     Virtual Memory
+ SJF                          Swapping
+ FCFS                         Segmentation

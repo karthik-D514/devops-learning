@@ -1,0 +1,543 @@
+---
+
+# 1. What is an Operating System?
+
+An Operating System (OS) is a collection of software that manages computer hardware and provides services for applications.
+
+An OS is NOT just the Kernel.
+
+The Kernel is only one component of the Operating System.
+
+A typical Linux Operating System consists of:
+
+- Kernel
+- Shell (Bash, Zsh, etc.)
+- System Libraries
+- System Utilities (ls, cat, cp, mv, grep, awk, etc.)
+- Device Drivers
+- Package Manager
+- Login Manager
+- Background Services
+- Many other supporting programs
+
+Think of the Operating System as an entire company.
+
+The Kernel is the CEO of that company.
+
+---
+
+# Operating System Structure
+
+                User
+                  │
+                  ▼
++--------------------------------------+
+| Applications                         |
+| Chrome                               |
+| Python                               |
+| Bash                                 |
+| awk                                  |
+| grep                                 |
+| ls                                   |
++--------------------------------------+
+| System Libraries                     |
++--------------------------------------+
+| Linux Kernel                         |
++--------------------------------------+
+| Hardware                             |
+| CPU                                  |
+| RAM                                  |
+| SSD                                  |
+| Network Card                         |
+| Keyboard                             |
++--------------------------------------+
+
+---
+
+# 2. What is the Kernel?
+
+The Kernel is the CORE program of the Operating System.
+
+It is a special program that is responsible for managing all hardware resources.
+
+The Kernel is loaded into memory during the boot process and remains running until the computer shuts down.
+
+Applications cannot directly access hardware.
+
+They must request services from the Kernel.
+
+---
+
+# Responsibilities of the Kernel
+
+The Kernel manages:
+
+- CPU
+- RAM
+- Storage Devices
+- File Systems
+- Network Interfaces
+- USB Devices
+- Printers
+- Keyboard
+- Mouse
+- Process Creation
+- Process Scheduling
+- Memory Allocation
+- Security
+- Permissions
+
+In short,
+
+The Kernel manages EVERYTHING related to hardware and system resources.
+
+---
+
+# Windows also has a Kernel
+
+Linux
+→ Linux Kernel
+
+Windows
+→ Windows NT Kernel
+
+macOS
+→ XNU Kernel
+
+Every modern Operating System has a Kernel.
+
+---
+
+# Important Interview Point
+
+Do NOT say:
+
+"Linux is the Operating System."
+
+Technically,
+
+Linux refers to the Kernel.
+
+Ubuntu, RHEL, Debian, Fedora, etc.
+
+are complete Operating Systems built around the Linux Kernel.
+
+---
+
+# 3. User Space vs Kernel Space
+
+These are NOT two different programs.
+
+They are two different execution environments (memory regions).
+
+--------------------------------------------------------
+
+User Space
+
+This is where normal applications run.
+
+Examples:
+
+- Chrome
+- Bash
+- Python
+- awk
+- grep
+- ls
+
+Applications running here have LIMITED privileges.
+
+They cannot directly:
+
+- Read hardware
+- Write hardware
+- Access another process's memory
+- Control CPU scheduling
+
+--------------------------------------------------------
+
+Kernel Space
+
+Kernel Space is the protected memory region where the Kernel executes.
+
+Only the Kernel runs here.
+
+The Kernel has FULL privileges.
+
+It can:
+
+- Access CPU
+- Access RAM
+- Access Storage
+- Access Devices
+- Control Hardware
+
+---
+
+# Simple Analogy
+
+User Space
+
+↓
+
+Office Employees
+
+Kernel Space
+
+↓
+
+CEO's Secure Office
+
+Employees cannot enter the CEO's office whenever they want.
+
+They submit requests.
+
+Similarly,
+
+Applications submit requests to the Kernel.
+
+---
+
+# Why do we need User Space and Kernel Space?
+
+Imagine every application could directly control hardware.
+
+Possible problems:
+
+- Applications overwrite each other's memory.
+- Applications crash the entire Operating System.
+- Malware directly controls hardware.
+- Multiple applications corrupt storage.
+
+Separating User Space and Kernel Space improves:
+
+- Security
+- Stability
+- Reliability
+- Isolation
+
+---
+
+# 4. What is a Shell?
+
+A Shell is a Command Line Interpreter.
+
+Its responsibility is to:
+
+- Read user commands.
+- Understand (parse) commands.
+- Locate the executable.
+- Ask the Kernel to create a process.
+- Wait until the process finishes.
+- Show the prompt again.
+
+Examples of Shells:
+
+- Bash
+- Zsh
+- Fish
+- Dash
+
+The Shell is NOT the Operating System.
+
+The Shell is just another application running in User Space.
+
+---
+
+# 5. What is a Terminal?
+
+Many beginners confuse Terminal and Shell.
+
+They are NOT the same.
+
+--------------------------------------------------------
+
+Terminal
+
+A Terminal is simply a program that provides a text interface.
+
+Its responsibilities are:
+
+- Accept keyboard input.
+- Display output.
+
+Examples:
+
+- GNOME Terminal
+- Windows Terminal
+- PuTTY
+- iTerm2
+
+--------------------------------------------------------
+
+Shell
+
+The Shell receives input from the Terminal.
+
+The Shell interprets the commands.
+
+The Shell launches programs.
+
+Therefore,
+
+Terminal ≠ Shell
+
+The Terminal is the interface.
+
+The Shell is the interpreter.
+
+---
+
+# Flow
+
+User
+
+↓
+
+Terminal
+
+↓
+
+Shell (Bash)
+
+↓
+
+Kernel
+
+↓
+
+Application
+
+↓
+
+Kernel
+
+↓
+
+Terminal
+
+↓
+
+User
+
+---
+
+# 6. What happens when we execute a command?
+
+Example:
+
+awk '{print $1}' file.txt
+
+Step 1
+
+The user types the command inside the Terminal.
+
+↓
+
+Step 2
+
+The Terminal sends the command to Bash.
+
+↓
+
+Step 3
+
+Bash interprets the command.
+
+It identifies:
+
+Executable = awk
+
+Arguments = {print $1} file.txt
+
+↓
+
+Step 4
+
+Bash asks the Kernel:
+
+"Please create a new process for the awk program."
+
+↓
+
+Step 5
+
+The Kernel creates a new process.
+
+↓
+
+Step 6
+
+The awk program begins executing in User Space.
+
+↓
+
+Step 7
+
+awk wants to read file.txt.
+
+It CANNOT directly access the SSD.
+
+Instead,
+
+awk requests the Kernel.
+
+↓
+
+Step 8
+
+The Kernel reads the file from storage.
+
+↓
+
+Step 9
+
+The Kernel returns the file contents to awk.
+
+↓
+
+Step 10
+
+awk processes the data.
+
+↓
+
+Step 11
+
+awk asks the Kernel to write the output.
+
+↓
+
+Step 12
+
+The Kernel writes the output to the Terminal.
+
+↓
+
+Step 13
+
+The user sees the output.
+
+↓
+
+Step 14
+
+awk exits.
+
+↓
+
+Step 15
+
+The Kernel informs Bash that awk has completed.
+
+↓
+
+Step 16
+
+Bash displays a new prompt.
+
+Ready for the next command.
+
+---
+
+# Important Clarification
+
+Does Bash disappear after interpreting the command?
+
+NO.
+
+Bash remains running.
+
+Bash waits until the child process finishes.
+
+After completion,
+
+Bash prints the prompt again.
+
+Only the executed program (awk, ls, grep, cat, etc.) exits.
+
+---
+
+# Important Mental Model
+
+Bash DOES NOT perform the actual work.
+
+Bash only:
+
+- Reads commands.
+- Understands commands.
+- Starts programs.
+
+The actual work is done by programs such as:
+
+- ls
+- awk
+- grep
+- cat
+- Python
+- Java
+
+---
+
+# Role of the Kernel During Command Execution
+
+The Kernel does NOT execute user commands.
+
+Instead,
+
+The Kernel provides services to applications.
+
+Examples of services:
+
+- Create a process.
+- Allocate memory.
+- Read files.
+- Write files.
+- Send network packets.
+- Access hardware.
+- Schedule CPU time.
+
+Applications request these services.
+
+The Kernel performs them safely.
+
+---
+
+
+# Summary Diagram
+
+                    User
+                      │
+                      ▼
+               Terminal Window
+                      │
+                      ▼
+               Bash (Shell)
+                      │
+                      ▼
+        Kernel creates new process
+                      │
+                      ▼
+        Program (awk / ls / grep)
+                      │
+                      ▼
+      Requests Kernel Services
+                      │
+                      ▼
+                 Linux Kernel
+                      │
+                      ▼
+                 Hardware
+                      │
+                      ▼
+                 Linux Kernel
+                      │
+                      ▼
+                  Program
+                      │
+                      ▼
+                 Terminal
+                      │
+                      ▼
+                    User
+

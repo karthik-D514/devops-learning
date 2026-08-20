@@ -16,3 +16,11 @@ What is swap memory?
  Priority                     Virtual Memory
  SJF                          Swapping
  FCFS                         Segmentation
+
+-> Can you explain the architecture of Linux? Specifically, what are the Kernel, Shell, User Space, and Kernel Space, and how do they interact when a user runs a command like ls?
+
+->Difference between OS and kernel ? Are they both same or different and how are they related?
+-> What is terminal and bash? Are they same or different and expain? who starts the bash or terminal? 
+-> What is a PATH and is it necessary? Where does programs get stored and how are they executed?
+-> what happens when we type something like grep or ls or awk? explain each step of execution?
+-> Why does Linux need both Bash and the Kernel?

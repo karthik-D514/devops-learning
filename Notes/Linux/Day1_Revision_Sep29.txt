@@ -1,0 +1,57 @@
+# Day 1 Revision Notes — September 29, 2026
+
+## 1. Key Filesystem Hierarchy Clarifications
+
+| Directory | Purpose | Key Distinctions |
+|-----------|---------|------------------|
+| `/etc` | System configuration files | Read/edited by admin/services |
+| `/bin` | Essential user binaries (`ls`, `cp`, `cat`) | Available to all users |
+| `/sbin` | System admin binaries (`fdisk`, `iptables`) | Typically root only |
+| `/usr` | Programs, libraries, documentation | Package manager managed (`dnf`/`apt`). NOT for user logs! |
+| `/var` | Variable data that grows over time | Logs live specifically in `/var/log/` |
+| `/tmp` | Temporary files | Cleared on reboot. World-writable, has sticky bit |
+| `/opt` | Optional / 3rd-party software | Manually extracted (e.g. `.tar.gz`), self-contained |
+
+### Debugging Flow for Failed Services (e.g. Nginx):
+1. `systemctl start nginx` → check status/failure output
+2. `journalctl -u nginx -xe` → check recent systemd unit logs
+3. Inspect `/var/log/nginx/error.log` using `tail -f` (NOT `head`, as `tail` shows recent crashes)
+
+---
+
+## 2. Octal Permissions Reference Table
+
+| Octal | Binary | Permission | Meaning |
+|-------|--------|------------|---------|
+| 0 | 000 | `---` | No permissions |
+| 1 | 001 | `--x` | Execute only |
+| 2 | 010 | `-w-` | Write only |
+| 3 | 011 | `-wx` | Write + Execute |
+| 4 | 100 | `r--` | Read only |
+| 5 | 101 | `r-x` | Read + Execute |
+| 6 | 110 | `rw-` | Read + Write |
+| 7 | 111 | `rwx` | Read + Write + Execute |
+
+*Formula*: `r=4`, `w=2`, `x=1`
+- `755` = `rwxr-xr-x`
+- `640` = `rw-r-----`
+- `750` = `rwxr-x---`
+
+---
+
+## 3. Ownership (`chown`) Syntax
+
+Target path ALWAYS comes LAST:
+
+```bash
+# Correct syntax
+chown user:group /path/to/target
+chown :group /path/to/target
+chown -R deploy:devs /var/www/app    # Recursive
+```
+
+---
+
+## 4. Practice Quiz Score
+- **Session Score**: 100% on final verification quiz.
+- **Status**: Day 1 Revision Completed & Verified.

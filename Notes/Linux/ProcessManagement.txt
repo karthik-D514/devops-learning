@@ -1,0 +1,256 @@
+# Linux Process Management - Complete Notes
+
+## Overview
+
+A process is the fundamental unit of execution in Linux. In modern DevOps, Site Reliability Engineering (SRE), and Platform Engineering, deep understanding of process lifecycle, states, signals, and resource scheduling is essential for debugging microservices, containers (which are isolated Linux processes), and production outages.
+
+---
+
+# 1. Fundamental Concepts
+
+| Concept | Definition | Resource Usage | Linux Example |
+| :--- | :--- | :--- | :--- |
+| **Program** | Inactive executable binary or script stored on disk. | 0% CPU, 0 RAM (disk storage only). | `/usr/bin/python3`, `/usr/sbin/nginx` |
+| **Process** | An active instance of a program loaded into RAM, assigned CPU time, open file descriptors, and a unique **PID**. | Has private virtual memory, CPU time slices, and kernel data structures. | `python3 app.py` running with PID 4510 |
+| **Thread** | A lightweight execution unit (LWP) **inside** a process. | Shares the parent process's memory space, file descriptors, and environment. | Worker threads handling HTTP requests inside an Nginx or Java process |
+| **Daemon** | A background process running without a controlling terminal (`TTY = ?`), usually starting at boot and waiting for requests. | Background memory & CPU as needed. | `sshd`, `systemd`, `crond`, `docker` (usually ends with `d`) |
+
+### Analogy: The Restaurant
+- **Program**: The recipe book on the shelf.
+- **Process**: The kitchen actively preparing the dish.
+- **Thread**: Multiple chefs cooking inside the same kitchen sharing tools and ingredients.
+- **Daemon**: The automatic dishwashing unit running quietly in the background 24/7.
+
+---
+
+# 2. Process Creation and PID 1
+
+### How Processes Are Born:
+Linux creates processes using two fundamental POSIX system calls:
+1. `fork()`: Creates an exact duplicate of the calling process (the child inherits memory, environment, open file descriptors).
+2. `exec()` (or `execve`): Replaces the process image with a new executable binary.
+
+### The Ancestor: PID 1 (`systemd`)
+- When the Linux kernel boots, it initializes hardware and directly launches **PID 1** (`/sbin/init` or `/usr/lib/systemd/systemd`).
+- Every single process on a Linux system is a descendant (child, grandchild) of PID 1.
+- You can visualize the complete tree using:
+  ```bash
+  pstree -p
+  ```
+
+---
+
+# 3. Process States (The Big 5)
+
+When inspecting processes with `ps aux` or `top`, the `STAT` column indicates the process execution state:
+
+| Code | State Name | Meaning & Description |
+| :--- | :--- | :--- |
+| **`R`** | **Running / Runnable** | The process is actively executing on a CPU core or sitting in the run queue ready for CPU time. |
+| **`S`** | **Interruptible Sleep** | Sleeping while waiting for an event (keystroke, socket data, timer). Can be woken up by any software signal. |
+| **`D`** | **Uninterruptible Sleep** | Parked waiting for hardware / disk / NFS I/O. **Cannot be killed by ANY signal (including `kill -9`)** until the hardware returns. |
+| **`T`** | **Stopped / Traced** | Suspended manually via `Ctrl+Z` (`SIGTSTP`) or stopped by a debugger (`SIGSTOP`). |
+| **`Z`** | **Zombie (`<defunct>`)** | Dead child process whose exit status has not yet been read by its parent via `wait()`. |
+
+---
+
+# 4. Zombie vs. Orphan Processes
+
+Understanding this distinction is a standard DevOps interview and production scenario.
+
+```
+       +---------------------------------------------+
+       |                  ORPHAN                     |
+       |  Parent DIES before Child finishes.         |
+       |  -> Child is ALIVE and running.             |
+       |  -> Kernel re-parents child to PID 1.       |
+       |  -> Harmless; systemd adopts & reaps it.    |
+       +---------------------------------------------+
+
+       +---------------------------------------------+
+       |                  ZOMBIE                     |
+       |  Child TERMINATES before Parent.            |
+       |  -> Child is DEAD (0 CPU, 0 RAM).           |
+       |  -> Parent is busy/buggy; neglects wait().  |
+       |  -> Entry remains in kernel process table.  |
+       |  -> Cannot be killed with kill -9!          |
+       +---------------------------------------------+
+```
+
+### Why `kill -9` Does Not Work on a Zombie:
+- You cannot kill what is already dead. The process code has stopped; its memory has been released.
+- It only exists as an entry in the kernel's process table waiting for the parent to acknowledge its exit code.
+
+### When are Zombies Dangerous?
+- 1 or 2 zombies are **harmless** (they consume 0 RAM and 0 CPU).
+- If a buggy parent process continuously leaks zombies, it will exhaust the OS **Process Table** (`/proc/sys/kernel/pid_max`, default ~32,768). Once depleted, the kernel **cannot spawn any new processes**, freezing logins and services.
+
+### How to Resolve Zombies in Production:
+1. Identify the Parent Process ID (PPID):
+   ```bash
+   ps -o pid,ppid,state,cmd | grep defunct
+   ```
+2. Nudge the parent to reap its children by sending `SIGCHLD`:
+   ```bash
+   kill -CHLD <PPID>
+   ```
+3. If the parent is hung/buggy and does not reap them, terminate or restart the parent:
+   ```bash
+   kill -15 <PPID>     # or systemctl restart <service>
+   ```
+   *When the parent dies, the zombie child becomes an orphan. PID 1 (`systemd`) immediately adopts the orphan and reaps its exit code, clearing the process table.*
+
+---
+
+# 5. Production Scenario: High Load Average with Low CPU
+
+### The Common Fallacy:
+> *"Load Average = CPU utilization."* (Incorrect on Linux!)
+
+### The Linux Formula:
+$$\text{Linux Load Average} = (\text{Processes in } R) + (\text{Processes in } D)$$
+
+On Linux, Load Average includes **both CPU-bound processes (`R`) and I/O-bound processes waiting for uninterruptible disk/NFS operations (`D`)**.
+
+### What High Load + Low CPU Means:
+If CPU is at 5%, but Load Average is 40+:
+- Dozens of threads are frozen in **`D` state** waiting for an unresponsive storage volume, stuck NFS mount, or failing disk sector.
+- Even though CPU is idle, users experience **HTTP 504 Gateway Timeouts** because application worker threads are exhausted waiting on I/O.
+
+### Diagnostic Tools:
+1. **Check Kernel Wait Channel (`wchan`)**:
+   `wchan` shows the exact kernel function where the sleeping/blocked process is parked:
+   ```bash
+   cat /proc/<PID>/wchan
+   # Example: nfs_wait_bit (stuck on NFS) or io_schedule (stuck on local disk)
+   ```
+2. **Inspect Kernel Stack Trace**:
+   ```bash
+   cat /proc/<PID>/stack
+   ```
+3. **Check Kernel Ring Buffer (`dmesg`)**:
+   The Kernel Ring Buffer is a fixed-size circular memory buffer in RAM where kernel hardware and driver events are recorded:
+   ```bash
+   dmesg -T | tail -50
+   dmesg -T | grep -iE 'error|nfs|scsi|oom'
+   ```
+4. **Emergency Fix for Hung NFS Shares**:
+   ```bash
+   umount -f -l /mnt/stuck_share    # Forceful + lazy unmount
+   ```
+
+---
+
+# 6. Linux Signals
+
+Signals are asynchronous software notifications sent to a process by the kernel or a user.
+
+| Signal Number | Signal Name | Purpose / Action | Can be Caught or Ignored? |
+| :---: | :--- | :--- | :---: |
+| **1** | **`SIGHUP`** | Hangup terminal / Hot reload configuration files. | Yes |
+| **2** | **`SIGINT`** | Interrupt from terminal (`Ctrl+C`). | Yes |
+| **9** | **`SIGKILL`** | Hard kill. Kernel destroys process instantly. | **NO (Uncatchable)** |
+| **15** | **`SIGTERM`** | Graceful shutdown request (default for `kill`). | Yes |
+| **17** | **`SIGCHLD`** | Sent to parent when child terminates or changes state. | Yes |
+| **18** | **`SIGCONT`** | Resume execution of a stopped process. | Yes |
+| **19** | **`SIGSTOP`** | Freeze / suspend process immediately. | **NO (Uncatchable)** |
+
+### Catchable vs. Non-Catchable:
+- **Catchable (`SIGTERM`, `SIGHUP`, `SIGINT`)**: Application code can register a signal handler to safely close database connections, flush memory buffers to disk, and exit cleanly.
+- **Non-Catchable (`SIGKILL`, `SIGSTOP`)**: Bypasses the application entirely. Handled directly by the Linux kernel.
+
+### Best Practice:
+Always send `SIGTERM` (`kill <PID>`) first. Give the service 10–30 seconds to shut down cleanly. Only send `SIGKILL` (`kill -9 <PID>`) as an emergency last resort for frozen processes.
+
+---
+
+# 7. Job Control & Avoiding the SSH Disconnect Trap
+
+### Why Scripts Die When SSH Closes:
+When an SSH session terminates, the shell sends **`SIGHUP` (Signal 1)** to all running child jobs in that terminal, terminating them.
+
+### Safe Execution Strategies:
+
+#### 1. Background Execution with `nohup`:
+```bash
+nohup ./long_script.sh &
+```
+- `nohup` instructs the process to ignore `SIGHUP`.
+- `&` returns the terminal prompt immediately.
+- Output is captured in `nohup.out`.
+
+#### 2. Shell Job Control (`jobs`, `fg`, `bg`, `disown`):
+If a long job was already started in the foreground:
+1. `Ctrl + Z`: Sends `SIGTSTP` to suspend the job.
+2. `jobs`: Lists active shell jobs (e.g., `[1]+ Stopped ./long_script.sh`).
+3. `bg %1`: Sends `SIGCONT` to resume job 1 in the background.
+4. `disown -h %1`: Removes job 1 from the shell's active table so **no SIGHUP is sent upon logout**.
+
+#### 3. Modern Best Practice: Terminal Multiplexers
+For production migrations and updates, run jobs inside **`tmux`** or **`screen`**:
+```bash
+tmux new -s maintenance
+# Run command... detach with Ctrl+B then D
+# Re-attach anytime:
+tmux attach -t maintenance
+```
+
+---
+
+# 8. Process Priority (`nice` and `renice`)
+
+Linux CFS (Completely Fair Scheduler) allocates CPU time slices based on **Nice values**.
+
+### The "Nice" Scale: `-20` to `+19`
+```
+-20 (Highest Priority / Aggressive) <---- 0 (Default) ----> +19 (Lowest Priority / Polite)
+```
+- **High Nice (+19)**: Very polite. Relinquishes CPU to other processes. Ideal for background backups, antivirus scans, and heavy log parsing.
+- **Low Nice (-20)**: Aggressive. Demands maximum CPU share.
+
+### Security Rule:
+- **Regular users** can only increase nice value (make processes more polite, 0 to 19).
+- **`root` only** can assign negative nice values (-20 to -1) or lower an existing nice value. This prevents unprivileged users from monopolizing system CPU cores.
+
+### Commands:
+```bash
+# Launch a low-priority CPU-intensive backup:
+nice -n 19 tar -czf backup.tar.gz /data
+
+# Launch with high priority (requires root):
+sudo nice -n -10 ./critical_service.sh
+
+# Adjust priority of an already running process:
+renice +15 -p 4510
+sudo renice -5 -p 4510
+```
+
+---
+
+# 9. Essential Command Reference Cheat Sheet
+
+```bash
+# Process Listing & Filtering
+ps aux                               # BSD style: user, PID, %CPU, %MEM, STAT, command
+ps -ef                               # Standard UNIX style: UID, PID, PPID, C, STIME, CMD
+ps -eLf                              # Show threads (LWP) inside all processes
+pgrep -l <name>                      # Search PID by process name
+pstree -p                            # Hierarchy tree with PIDs
+
+# Interactive Monitoring
+top                                  # Real-time resource monitor (Press 'H' for thread view)
+htop                                 # Enhanced interactive monitor
+
+# Signaling & Termination
+kill <PID>                           # Sends SIGTERM (15) gracefully
+kill -9 <PID>                        # Emergency SIGKILL
+kill -1 <PID>                        # SIGHUP (hot reload daemon config)
+pkill -u <username>                  # Kill all processes owned by a user
+killall <process_name>               # Kill by binary name
+
+# Kernel Virtual Filesystem (/proc/<PID>/)
+cat /proc/<PID>/cmdline              # Full command and arguments that started the process
+cat /proc/<PID>/status               # Process status, memory footprints (VmRSS, VmSize)
+cat /proc/<PID>/wchan                # Current kernel function where process is sleeping
+ls -l /proc/<PID>/fd/                # List open file descriptors (sockets, files, pipes)
+```

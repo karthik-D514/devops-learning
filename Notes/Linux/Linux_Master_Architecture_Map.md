@@ -1,6 +1,6 @@
 # 🗺️ Complete Linux Master Architecture & SRE Incident Map
 
-> 🤖 **Note:** *This document is AI-generated as an overarching reference and architectural blueprint for the DevOps / Platform Engineering / SRE Learning Journey. Please review before staging.*
+> 🤖 **Note:** *This document is AI-generated as an overarching reference and architectural blueprint*
 
 ---
 
@@ -126,5 +126,3 @@ journalctl -p err -b
 ```
 
 ---
-
-> 📌 **Authoring Note:** *Review this architecture map. Once confirmed, this file can be staged and pushed to the `main` branch of `D:\DevOps-Journey`.*

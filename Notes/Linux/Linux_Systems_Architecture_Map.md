@@ -1,8 +1,8 @@
 # 🗺️ Master Linux Systems Map & Incident Triage Guide
 
-> 🤖 **Note:** *This document is AI-generated as an overarching reference and architectural blueprint for the DevOps / Platform Engineering / SRE Learning Journey. Please review before staging.*
+> 🤖 **Note:** *This document is AI-generated as an overarching reference and architectural blueprint.*
 
-This map visually connects **all 9 core Linux topics** mastered so far. It shows how storage, files, permissions, identity, processes, and `systemd` form a single interconnected machine—and exactly where to look when production breaks.
+This map visually shows how storage, files, permissions, identity, processes, and `systemd` form a single interconnected machine—and exactly where to look when production breaks.
 
 ---
 
